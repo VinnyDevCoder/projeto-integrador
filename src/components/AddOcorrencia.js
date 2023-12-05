@@ -18,6 +18,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import { AntDesign } from '@expo/vector-icons';
+import { getStorage, ref, getDownloadURL, uploadBytes } from "firebase/storage";
+import { getDatabase, ref as refDatabase, push,update,child } from "firebase/database";
 
 export default function AddOcorrencia() {
   const navigation = useNavigation()
@@ -49,6 +51,7 @@ export default function AddOcorrencia() {
 
   function openModal() {
     setModalStatus(!modalStatus);
+    console.log(image)
   }
 
   async function openAlbum() {
@@ -81,17 +84,79 @@ export default function AddOcorrencia() {
     }
   }
 
+  async function getCurrentLocation() {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        alert("Permission to access location was denied");
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+      setCurrentRegion({
+        latitude,
+        longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      });
+    } catch (error) {
+      console.error("Error getting current location:", error);
+    }
+  }
+
+
+  async function adiciona() {
+    try {
+      await getCurrentLocation();
+   
+      if (image && descricao && currentRegion) {
+        const dataResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${currentRegion.latitude}&longitude=${currentRegion.longitude}&localityLanguage=pt`);
+        const dataJson = await dataResponse.json();
+  
+
+        const db = getDatabase();
+        const dbRef = refDatabase(db, 'ocorrencia/' + dataJson.city);
+        const newRef = push(dbRef, { descricao: descricao, latitude: currentRegion.latitude, longitude: currentRegion.longitude, imagem: '' });
+  
+  
+        const imageResponse = await fetch(image);
+        const imageBlob = await imageResponse.blob();
+  
+        const storage = getStorage();
+        const storageRef = ref(storage, 'images/' + dataJson.city + "/" + newRef.key);
+        const snapshot = await uploadBytes(storageRef, imageBlob);
+  
+        const imageUrl = await getDownloadURL(snapshot.ref);
+  
+        update(child(dbRef, newRef.key), { imagem: imageUrl });
+        console.log('Link da imagem:', imageUrl);
+        alert("Ocorrência adicionada com sucesso!")
+        navigation.goBack();
+        return;
+      }
+  
+      alert("Erro: Dados necessários não estão disponíveis.");
+  
+    } catch (error) {
+      console.error('Erro ao adicionar ocorrência:', error);
+      alert("Erro ao adicionar ocorrência. Consulte o console para mais detalhes.");
+    }
+  }
+  
+
   return (
     <ScrollView
       contentContainerStyle={{ flexGrow: 1 }}
       keyboardShouldPersistTaps="handled"
     >
       <View style={style.container}>
-      <View style={{ position: 'absolute', top: 0, left: 10 }}>
-              <TouchableOpacity onPress={()=> navigation.goBack()}>
-                <Ionicons name="return-up-back" size={45} color="grey" />
-              </TouchableOpacity>
-            </View>
+        <View style={{ position: 'absolute', top: 0, left: 10 }}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="return-up-back" size={45} color="grey" />
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity onPress={openModal}>
           <View style={style.cPhoto}>
@@ -103,7 +168,7 @@ export default function AddOcorrencia() {
 
         <View style={{ flex: 1, width: '100%', marginTop: 40 }}>
           <Text style={{ fontSize: 20 }}>Descrição:</Text>
-        
+
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : null}
             style={{ flex: 1 }}
@@ -118,7 +183,7 @@ export default function AddOcorrencia() {
         </View>
 
         {!isKeyboardVisible && (
-          <TouchableOpacity style={style.button} >
+          <TouchableOpacity style={style.button} onPress={adiciona} >
             <AntDesign name="pluscircle" size={70} color="grey" />
           </TouchableOpacity>
         )}
