@@ -4,6 +4,15 @@
     "slug": "projeto-integrador",
     "version": "1.0.0",
     "orientation": "portrait",
+    "permissions": [
+      "LOCATION",
+      "CAMERA"
+    ],
+    "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
+      }
+    },
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
@@ -28,3 +37,4 @@
     }
   }
 }
+

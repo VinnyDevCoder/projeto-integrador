@@ -1,56 +1,61 @@
-import { View, Text } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet } from "react-native";
 import MapView from 'react-native-maps';
-import { useEffect, useState } from "react";
-import * as Location from 'expo-location'
-import { StyleSheet } from "react-native";
+import * as Location from 'expo-location';
 
 export default function Mapa() {
-    const [currentRegion, setCurrentRegion] = useState()
+    const [currentRegion, setCurrentRegion] = useState(null);
 
     useEffect(() => {
-
-        async function getCurrentRegion() {
+        async function getCurrentLocation() {
             try {
-               
-                const { status } = await Location.requestForegroundPermissionsAsync()
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                
                 if (status !== 'granted') {
-                    alert("permisison to acces location was denied")
-                    return
+                    alert("Permission to access location was denied");
+                    return;
                 }
                 
-                const location = await Location.getCurrentPositionAsync({})
-                const { latitude, longitude } = location.coords
-                
+                const location = await Location.getCurrentPositionAsync({});
+                const { latitude, longitude } = location.coords;
                 setCurrentRegion({
-                    latitude, longitude, latitudeDelta: 0.0922,
+                    latitude,
+                    longitude,
+                    latitudeDelta: 0.0922,
                     longitudeDelta: 0.0421,
-                })
-               
-            
-            } catch (e) {
-                console.log(e)
+                });
+            } catch (error) {
+                console.error("Error getting current location:", error);
             }
-
         }
 
-        getCurrentRegion()
-    }, [])
-    console.log(currentRegion)
+        getCurrentLocation();
+
+        
+    
+    }, []);
 
     return (
-        <View>
-            <MapView
-            style={style.map}
-            region={currentRegion}
-            
-            />
+        <View style={styles.container}>
+       
+                <MapView
+                    style={styles.map}
+                    region={currentRegion}
+                    loadingEnabled={true}
+                    showsUserLocation={true}
+                    zoomEnabled={true}
+                    minZoomLevel={15}
+                />
+          
         </View>
-    )
+    );
 }
 
-const style = StyleSheet.create({
-    map:{
-        width:"100%",
-        height:"100%"
-    }
-})
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    map: {
+        flex: 1,
+    },
+});
