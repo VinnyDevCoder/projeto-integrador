@@ -18,16 +18,20 @@ import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import { AntDesign } from '@expo/vector-icons';
-import { getStorage, ref, getDownloadURL, uploadBytes } from "firebase/storage";
-import { getDatabase, ref as refDatabase, push,update,child } from "firebase/database";
+import { getStorage, ref, getDownloadURL, uploadBytesResumable, } from "firebase/storage";
+import { getDatabase, ref as refDatabase, push, update, child } from "firebase/database";
+import { ProgressBar } from "react-native-paper";
+import { manipulateAsync } from 'expo-image-manipulator';
 
 export default function AddOcorrencia() {
   const navigation = useNavigation()
   const [descricao, setDescricao] = useState('');
-  const [currentRegion, setCurrentRegion] = useState(null);
   const [modalStatus, setModalStatus] = useState(false);
+  const [progressImage, setProgessImage] = useState(0)
+  const [isProgessVisible, setProgressVisible] = useState(false)
   const [image, setImage] = useState(null);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -51,7 +55,6 @@ export default function AddOcorrencia() {
 
   function openModal() {
     setModalStatus(!modalStatus);
-    console.log(image)
   }
 
   async function openAlbum() {
@@ -63,8 +66,18 @@ export default function AddOcorrencia() {
     };
 
     let result = await ImagePicker.launchImageLibraryAsync(options);
+
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+
+      const isPng = result.assets[0].mediaType === 'image/png';
+
+      const manipulatedImage = await manipulateAsync(
+        result.assets[0].uri,
+        [],
+        { compress: 0.5, format: isPng ? 'png' : 'jpeg' }
+      );
+
+      setImage(manipulatedImage.uri);
       openModal();
     }
   }
@@ -95,56 +108,83 @@ export default function AddOcorrencia() {
 
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
-      setCurrentRegion({
+      const region = {
         latitude,
         longitude,
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421,
-      });
+      }
+      return region
     } catch (error) {
       console.error("Error getting current location:", error);
     }
   }
 
+  function openProgessModal() {
+    setProgressVisible(!isProgessVisible)
+    openModal()
+  }
 
   async function adiciona() {
     try {
-      await getCurrentLocation();
-   
-      if (image && descricao && currentRegion) {
+      const currentRegion = await getCurrentLocation();
+      const descricaoSemEspaços = descricao.trim();
+
+      if (image && descricaoSemEspaços !== "" && currentRegion && !isLoading) {
+        setIsLoading(true); // Set loading state to true to prevent multiple clicks
+        openProgessModal()
+
         const dataResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${currentRegion.latitude}&longitude=${currentRegion.longitude}&localityLanguage=pt`);
         const dataJson = await dataResponse.json();
-  
+        const { localityInfo } = dataJson;
+        const { administrative } = localityInfo;
 
+        const cidade = administrative[5];
         const db = getDatabase();
-        const dbRef = refDatabase(db, 'ocorrencia/' + dataJson.city);
-        const newRef = push(dbRef, { descricao: descricao, latitude: currentRegion.latitude, longitude: currentRegion.longitude, imagem: '' });
-  
-  
+        const dbRef = refDatabase(db, 'cidades/' + cidade.geonameId);
+        const newRef = push(dbRef, { descricao: descricao, latitude: currentRegion.latitude, longitude: currentRegion.longitude, imagem: '', cidade: cidade.name, data: Date.now() });
+
         const imageResponse = await fetch(image);
         const imageBlob = await imageResponse.blob();
-  
+
         const storage = getStorage();
-        const storageRef = ref(storage, 'images/' + dataJson.city + "/" + newRef.key);
-        const snapshot = await uploadBytes(storageRef, imageBlob);
-  
+        const storageRef = ref(storage, 'images/' + cidade.geonameId + "/" + newRef.key);
+
+        const uploadTask = uploadBytesResumable(storageRef, imageBlob);
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setProgessImage(progress)
+          },
+          (error) => {
+            console.error('Error during upload:', error);
+            openProgessModal()
+            alert("Erro durante o upload da imagem.");
+          },
+          () => {
+            openProgessModal()
+            console.log('Upload completed');
+          }
+        );
+
+        const snapshot = await uploadTask;
+
         const imageUrl = await getDownloadURL(snapshot.ref);
-  
+
         update(child(dbRef, newRef.key), { imagem: imageUrl });
-        console.log('Link da imagem:', imageUrl);
-        alert("Ocorrência adicionada com sucesso!")
+        alert("Ocorrência adicionada com sucesso!");
         navigation.goBack();
         return;
       }
-  
-      alert("Erro: Dados necessários não estão disponíveis.");
-  
+
+      alert("Erro: Por favor, forneça todos os dados necessários para continuar.");
     } catch (error) {
-      console.error('Erro ao adicionar ocorrência:', error);
-      alert("Erro ao adicionar ocorrência. Consulte o console para mais detalhes.");
+      console.error(error);
+      alert("Erro ao adicionar ocorrência.");
+    } finally {
+      setIsLoading(false); // Reset loading state after the operation is complete
     }
   }
-  
 
   return (
     <ScrollView
@@ -176,6 +216,7 @@ export default function AddOcorrencia() {
             <TextInput
               style={style.input}
               multiline
+              placeholder="Exemplo: Terreno abandonado"
               onChangeText={text => setDescricao(text)}
               value={descricao}
             />
@@ -183,7 +224,11 @@ export default function AddOcorrencia() {
         </View>
 
         {!isKeyboardVisible && (
-          <TouchableOpacity style={style.button} onPress={adiciona} >
+          <TouchableOpacity
+            style={style.button}
+            onPress={adiciona}
+            disabled={isLoading} // Disable the button when loading
+          >
             <AntDesign name="pluscircle" size={70} color="grey" />
           </TouchableOpacity>
         )}
@@ -193,23 +238,36 @@ export default function AddOcorrencia() {
           transparent={true}
           visible={modalStatus}
         >
-          <View style={style.cModal}>
-            <View style={{ position: 'absolute', top: 0, left: 10 }}>
-              <TouchableOpacity onPress={openModal}>
-                <Ionicons name="return-up-back" size={50} color="grey" />
-              </TouchableOpacity>
+          {isProgessVisible ? (
+            <View style={style.cModal}>
+              <View style={{ width: 300 }}>
+                <View style={{ alignItems: 'center', width: '100%' }}>
+                  <Text style={{ color: 'white', fontSize: 30, fontWeight: 'bold', }}>{progressImage.toFixed(0)}%</Text>
+                </View>
+                <ProgressBar progress={progressImage / 100} color='#5fc2c2' />
+              </View>
             </View>
+          ) : (
 
-            <View style={style.btnContainer}>
-              <TouchableOpacity onPress={openCamera} style={style.btnAddPhoto}>
-                <MaterialIcons name="photo-camera" size={50} color="black" />
-              </TouchableOpacity>
+              <View style={style.cModal}>
+                <View style={{ position: 'absolute', top: 0, left: 10 }}>
+                  <TouchableOpacity onPress={openModal}>
+                    <Ionicons name="return-up-back" size={50} color="grey" />
+                  </TouchableOpacity>
+                </View>
 
-              <TouchableOpacity onPress={openAlbum} style={style.btnAddPhoto}>
-                <MaterialIcons name="add-photo-alternate" size={50} color="black" />
-              </TouchableOpacity>
-            </View>
-          </View>
+                <View style={style.btnContainer}>
+                  <TouchableOpacity onPress={openCamera} style={style.btnAddPhoto}>
+                    <MaterialIcons name="photo-camera" size={50} color="black" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={openAlbum} style={style.btnAddPhoto}>
+                    <MaterialIcons name="add-photo-alternate" size={50} color="black" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
         </Modal>
       </View>
     </ScrollView>
@@ -220,7 +278,8 @@ const style = StyleSheet.create({
   input: {
     borderBottomWidth: 1,
     width: '100%',
-    padding: 5,
+    paddingHorizontal: 5,
+
   },
   container: {
     alignItems: 'center',
@@ -237,6 +296,7 @@ const style = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
+
   },
 
   cModal: {
@@ -244,6 +304,7 @@ const style = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+
   },
   btnContainer: {
     flexDirection: 'row',
