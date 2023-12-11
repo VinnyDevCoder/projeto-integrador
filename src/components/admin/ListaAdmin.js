@@ -33,8 +33,13 @@ export default function ListaAdmin() {
             onValue(databaseRef, (snapshot) => {
                 setLista([])
                 snapshot.forEach((childSnapshot) => {
-                    
-                    setLista(antList => [childSnapshot.val(),...antList])
+                    let ocorrencia = childSnapshot.val()
+                    if(!ocorrencia.aceito){
+                        ocorrencia.geonameId = cidade.geonameId
+                        ocorrencia.id = childSnapshot.key
+                        setLista(antList => [ocorrencia,...antList])
+                    }
+                   
                    
 
                 }
@@ -77,7 +82,9 @@ export default function ListaAdmin() {
           <FlatList
           data={lista}
           showsVerticalScrollIndicator={false}
+
           renderItem={({item}) => <ItemOcorrenciaAdmin dados={item}/>}
+      
           />
     
         </View >

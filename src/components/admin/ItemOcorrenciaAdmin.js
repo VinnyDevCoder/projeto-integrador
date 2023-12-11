@@ -1,8 +1,10 @@
+import { useNavigation } from '@react-navigation/native';
 import React, {useState } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { StyleSheet, View, Image, ActivityIndicator, Text } from 'react-native';
 
-export default function ItemOcorrenciaAdmin({ dados }) {
+export default function ItemOcorrenciaAdmin({ dados,usuario }) {
+    const navigation = useNavigation()
     const [isLoading, setIsLoading] = useState(true);
     const handleLoadStart = () => {
         setIsLoading(true);
@@ -34,7 +36,16 @@ export default function ItemOcorrenciaAdmin({ dados }) {
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity style={{ flexDirection: 'row',  padding: 10, }}>
+            <TouchableOpacity onPress={()=>{
+                if(usuario){
+                dados.usuario = usuario
+                navigation.navigate('OcorrenciaUsuario',dados)
+                    return
+                }
+                navigation.navigate('Ocorrencia',dados)
+                }
+                
+                } style={{ flexDirection: 'row',  padding: 10, }}>
                 {isLoading && <ActivityIndicator size={50} style={styles.loading} />}
                 {dados.imagem && <Image
                     style={styles.imagem}

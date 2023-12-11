@@ -131,7 +131,7 @@ export default function AddOcorrencia() {
       const descricaoSemEspaços = descricao.trim();
 
       if (image && descricaoSemEspaços !== "" && currentRegion && !isLoading) {
-        setIsLoading(true); // Set loading state to true to prevent multiple clicks
+        setIsLoading(true); 
         openProgessModal()
 
         const dataResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${currentRegion.latitude}&longitude=${currentRegion.longitude}&localityLanguage=pt`);
@@ -142,7 +142,7 @@ export default function AddOcorrencia() {
         const cidade = administrative[5];
         const db = getDatabase();
         const dbRef = refDatabase(db, 'cidades/' + cidade.geonameId);
-        const newRef = push(dbRef, { descricao: descricao, latitude: currentRegion.latitude, longitude: currentRegion.longitude, imagem: '', cidade: cidade.name, data: Date.now() });
+        const newRef = push(dbRef, { descricao: descricao, latitude: currentRegion.latitude, longitude: currentRegion.longitude, imagem: '', cidade: cidade.name, data: Date.now(),aceito:false });
 
         const imageResponse = await fetch(image);
         const imageBlob = await imageResponse.blob();
@@ -157,13 +157,12 @@ export default function AddOcorrencia() {
             setProgessImage(progress)
           },
           (error) => {
-            console.error('Error during upload:', error);
+            console.error(error);
             openProgessModal()
             alert("Erro durante o upload da imagem.");
           },
           () => {
             openProgessModal()
-            console.log('Upload completed');
           }
         );
 
@@ -172,7 +171,7 @@ export default function AddOcorrencia() {
         const imageUrl = await getDownloadURL(snapshot.ref);
 
         update(child(dbRef, newRef.key), { imagem: imageUrl });
-        alert("Ocorrência adicionada com sucesso!");
+        alert("Ocorrência enviada com sucesso!");
         navigation.goBack();
         return;
       }
@@ -182,7 +181,7 @@ export default function AddOcorrencia() {
       console.error(error);
       alert("Erro ao adicionar ocorrência.");
     } finally {
-      setIsLoading(false); // Reset loading state after the operation is complete
+      setIsLoading(false); 
     }
   }
 
@@ -227,7 +226,7 @@ export default function AddOcorrencia() {
           <TouchableOpacity
             style={style.button}
             onPress={adiciona}
-            disabled={isLoading} // Disable the button when loading
+            disabled={isLoading} 
           >
             <AntDesign name="pluscircle" size={70} color="grey" />
           </TouchableOpacity>
