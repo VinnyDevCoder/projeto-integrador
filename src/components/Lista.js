@@ -1,15 +1,15 @@
 import { TouchableOpacity } from "react-native"
-import { StyleSheet,FlatList } from "react-native"
-import { View } from "react-native"
-import { AntDesign } from '@expo/vector-icons'; 
+import { StyleSheet, FlatList } from "react-native"
+import { View, Text } from "react-native"
+import { AntDesign } from '@expo/vector-icons';
 import { useNavigation } from "@react-navigation/native";
-import { getDatabase,onValue,ref } from "firebase/database";
+import { getDatabase, onValue, ref } from "firebase/database";
 import * as Location from 'expo-location';
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import ItemOcorrenciaAdmin from "./admin/ItemOcorrenciaAdmin";
 
 
-export default function Lista(){
+export default function Lista() {
     const navigation = useNavigation()
 
 
@@ -33,24 +33,24 @@ export default function Lista(){
             const cidade = administrative[5];
             const database = getDatabase()
             const databaseRef = ref(database, 'cidades/' + cidade.geonameId)
-            
+
             onValue(databaseRef, (snapshot) => {
                 setLista([])
                 snapshot.forEach((childSnapshot) => {
                     let ocorrencia = childSnapshot.val()
-                    if(ocorrencia.aceito){
+                    if (ocorrencia.aceito) {
                         ocorrencia.geonameId = cidade.geonameId
                         ocorrencia.id = childSnapshot.key
-                        setLista(antList => [ocorrencia,...antList])
+                        setLista(antList => [ocorrencia, ...antList])
                     }
-                   
-                   
+
+
 
                 }
                 )
             })
-    
-            
+
+
         } catch (e) {
             alert(e)
         }
@@ -79,40 +79,44 @@ export default function Lista(){
         }
     }
 
-   
 
 
 
 
-    return(
-    <View style={style.container}>
-        {lista? <FlatList
-          data={lista}
-          showsVerticalScrollIndicator={false}
 
-          renderItem={({item}) => <ItemOcorrenciaAdmin usuario={true} dados={item}/>}
-      
-          />:<Text>Não tem ocorrências na sua cidade</Text>}
-        <View style={style.button}>
-        <TouchableOpacity onPress={()=>navigation.navigate('AddOcorrencia')}>
-        <AntDesign name="pluscircle" size={70} color="grey" />
-        </TouchableOpacity>
+    return (
+        <View style={style.container}>
+            {lista.length > 0 ? <FlatList
+                data={lista}
+                showsVerticalScrollIndicator={false}
+
+                renderItem={({ item }) => <ItemOcorrenciaAdmin usuario={true} dados={item} />}
+
+            /> : (
+                <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
+                    <Text style={{fontSize:20}}>Não tem ocorrências na sua cidade</Text>
+                </View>
+            )}
+            <View style={style.button}>
+                <TouchableOpacity onPress={() => navigation.navigate('AddOcorrencia')}>
+                    <AntDesign name="pluscircle" size={70} color="grey" />
+                </TouchableOpacity>
+
+            </View>
 
         </View>
-       
-    </View>
     )
 }
 
 
 const style = StyleSheet.create({
-    container:{
-        flex:1,
-        padding:10
+    container: {
+        flex: 1,
+        padding: 10
     },
-    button:{
-        position:'absolute',
-        bottom:40,
-        right:30
+    button: {
+        position: 'absolute',
+        bottom: 40,
+        right: 30
     }
 })

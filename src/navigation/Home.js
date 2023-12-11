@@ -2,6 +2,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import Mapa from "../components/Mapa"
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import ListaNavigation from "./ListaNavigation";
+import Prevencao from "../components/Prevencao";
 
 const Tab = createBottomTabNavigator()
 
@@ -30,7 +31,7 @@ export default function Home(){
                 tabBarIcon:({color,size})=>(<FontAwesome5 name="clipboard-list" size={size} color={color} />)}}
             />
             <Tab.Screen name="Prevencao"
-             component={Mapa}
+             component={Prevencao}
              options={{
                 tabBarLabel:"Prevenção",
                 tabBarIcon:({color,size})=>(<FontAwesome5 name="shield-virus" size={size} color={color}/>),

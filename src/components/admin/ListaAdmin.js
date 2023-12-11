@@ -21,6 +21,7 @@ export default function ListaAdmin() {
 
     async function getLista() {
         try {
+            
             const currentRegion = await getCurrentLocation()
             const dataResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${currentRegion.latitude}&longitude=${currentRegion.longitude}&localityLanguage=pt`);
             const dataJson = await dataResponse.json();
@@ -79,13 +80,16 @@ export default function ListaAdmin() {
 
     return (
         <View style={style.container}>
-          <FlatList
-          data={lista}
-          showsVerticalScrollIndicator={false}
-
-          renderItem={({item}) => <ItemOcorrenciaAdmin dados={item}/>}
-      
-          />
+            {lista.length >0?
+             <FlatList
+             data={lista}
+             showsVerticalScrollIndicator={false}
+   
+             renderItem={({item}) => <ItemOcorrenciaAdmin dados={item}/>}
+         
+             />:<Text style={{fontSize:20,width:'100%',textAlign:'center'}}>Nao tem ocorrências</Text>
+        }
+         
     
         </View >
     )

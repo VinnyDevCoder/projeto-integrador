@@ -70,6 +70,15 @@ export default function Ocorrencia({ navigation }) {
 
             <Text style={{ fontSize: 20, width: '100%', marginBottom: 20 }}>Descrição:</Text>
             <Text style={style.desc} > {route.params?.descricao}</Text>
+            <View style={{margin:10}}>
+            <Button onPress={()=>{
+                const {latitude,longitude}=  route.params
+               
+                navigation.navigate('Mapa',{latitude,longitude, latitudeDelta: 0.0922,
+                    longitudeDelta: 0.0421,usuario:route.params?.usuario,descricao:route.params.descricao})
+            }} title="Ver no mapa"/>
+            </View>
+            
             {!(route.params?.usuario) && (
                 <View>
                     <View style={{ flexDirection: 'row', gap: 50, marginTop: 20 }}>
