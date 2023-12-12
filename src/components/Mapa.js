@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { onValue, ref, getDatabase } from "firebase/database";
+import { onValue, ref, getDatabase, get } from "firebase/database";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 export default function Mapa() {
@@ -65,8 +65,10 @@ export default function Mapa() {
             const database = getDatabase()
             const databaseRef = ref(database, 'cidades/' + cidade.geonameId)
 
-            onValue(databaseRef, (snapshot) => {
-                setLista([])
+           
+
+            const snapshot = await get(databaseRef)
+            if (snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
                     let ocorrencia = childSnapshot.val()
                     if (ocorrencia.aceito) {
@@ -75,11 +77,9 @@ export default function Mapa() {
                         setLista(antList => [ocorrencia, ...antList])
                     }
 
-
-
                 }
                 )
-            })
+            }
 
 
         } catch (e) {

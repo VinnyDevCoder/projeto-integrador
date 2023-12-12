@@ -5,6 +5,7 @@ import { Button } from "react-native";
 import { Modal } from "react-native";
 import { useState } from "react";
 import { getDatabase, ref, set, update, remove } from "firebase/database";
+import { getStorage, ref as refStorage, deleteObject } from "firebase/storage"
 
 
 export default function Ocorrencia({ navigation }) {
@@ -44,6 +45,13 @@ export default function Ocorrencia({ navigation }) {
                 const { cidade, data, descricao, imagem, latitude, longitude } = route.params
                 const database = getDatabase()
                 const databaseRef = ref(database, 'cidades/' + geoId + '/' + route.params.id)
+                const storage = getStorage()
+                const desertRef = refStorage(storage, 'images/'+geoId+"/"+route.params.id);
+                deleteObject(desertRef).then(() => {
+                   
+                  }).catch((error) => {
+                    console.log(error)
+                  });
                 remove(databaseRef, { cidade, data, descricao, imagem, latitude, longitude, aceito: true })
                 setModalStatus(!modalStatus);
                 navigation.goBack()

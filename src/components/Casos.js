@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, Button } from "react-native";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { getDatabase, ref, onValue, get } from "firebase/database";
 import * as Location from 'expo-location';
 import { PieChart } from "react-native-chart-kit";
 import { SearchBar } from "react-native-elements";
@@ -22,6 +22,7 @@ export default function Casos() {
 
     async function calculaDados() {
         await getLista()
+        
         try {
             if (lista.length > 0) {
                 let maior = lista[0].casos
@@ -98,9 +99,13 @@ export default function Casos() {
     
     async function getLista() {
         try {
+      
             const currentRegion = await getCurrentLocation()
+        
             const dataResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${currentRegion.latitude}&longitude=${currentRegion.longitude}&localityLanguage=pt`);
+        
             const dataJson = await dataResponse.json();
+          
             const { localityInfo } = dataJson;
             const { administrative } = localityInfo;
             const cidade = administrative[5];
@@ -118,7 +123,8 @@ export default function Casos() {
             },{
                 onlyOnce: true
               })
-            
+
+             
 
 
         }
@@ -130,13 +136,15 @@ export default function Casos() {
     async function getCurrentLocation() {
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
-
+         
             if (status !== 'granted') {
                 alert("Permission to access location was denied");
                 return;
             }
+            
 
             const location = await Location.getCurrentPositionAsync({});
+         
             const { latitude, longitude } = location.coords;
             const region = {
                 latitude,
