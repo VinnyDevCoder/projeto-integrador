@@ -64,6 +64,7 @@ export default function ItemOcorrenciaAdmin({ dados,usuario }) {
 
 const styles = StyleSheet.create({
     container: {
+        backgroundColor:'white',
         borderRadius: 10, 
         borderWidth: 1,
         width: '100%',

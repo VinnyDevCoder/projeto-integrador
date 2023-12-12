@@ -3,7 +3,7 @@ import { View, StyleSheet } from "react-native";
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { onValue, ref, getDatabase } from "firebase/database";
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 export default function Mapa() {
     const [currentRegion, setCurrentRegion] = useState(null);
@@ -12,13 +12,17 @@ export default function Mapa() {
     const cordenadas = route?.params
 
 
-
     useEffect(() => {
+
+
 
 
         getLista()
 
-        return () => getLista()
+        return () => {
+            getLista()
+
+        }
 
     }, []);
 
@@ -94,11 +98,7 @@ export default function Mapa() {
                 zoomEnabled={true}
                 minZoomLevel={15}
             >
-                {cordenadas && cordenadas?.usuario ==null && <Marker
-                    key={Date.now()}
-                    coordinate={cordenadas}
-                    title={cordenadas?.descricao}
-                />}
+
                 {lista && lista.map((ocorrencia, index) => {
                     return (
                         <Marker

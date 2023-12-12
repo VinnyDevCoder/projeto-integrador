@@ -3,11 +3,16 @@ import Mapa from "../components/Mapa"
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import ListaNavigation from "./ListaNavigation";
 import Prevencao from "../components/Prevencao";
-
+import { Foundation } from '@expo/vector-icons'; 
+import { useState } from "react";
+import Casos from "../components/Casos";
 const Tab = createBottomTabNavigator()
 
 
 export default function Home(){
+
+    
+
     return(
         <Tab.Navigator screenOptions={{
             headerShown:false,
@@ -16,6 +21,7 @@ export default function Home(){
             }}>
             <Tab.Screen name="Mapa" 
              component={Mapa} 
+          
              options={{
                 
                 tabBarIcon: ({ color, size }) => (
@@ -37,6 +43,13 @@ export default function Home(){
                 tabBarIcon:({color,size})=>(<FontAwesome5 name="shield-virus" size={size} color={color}/>),
             }}
              />
+
+             <Tab.Screen name="Casos" 
+             component={Casos}
+             options={{
+                tabBarIcon:({color,size}) => (<Foundation name="graph-pie" size={size} color={color} />)
+             }}/>
+            
         </Tab.Navigator>
     )
 }
